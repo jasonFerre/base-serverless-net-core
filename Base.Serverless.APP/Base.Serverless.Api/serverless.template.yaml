@@ -1,0 +1,58 @@
+﻿AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Globals:
+  Function:
+    Runtime: dotnetcore3.1
+    MemorySize: 128
+    Timeout: 10
+    CodeUri: /
+
+Parameters:
+  StageApiGateway:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - uat
+      - prod
+    Description: Enter your stage name environment
+
+Mappings:
+  RoleLambda:
+    RoleExec:
+      Adm: arn:aws:iam::924245329070:role/role-adm-lambda-projects
+
+Resources:
+  APIRest:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref StageApiGateway
+      Name: base-serverless-net-core
+
+  Get:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: Base.Serverless.Api::Base.Serverless.Api.Handlers.FunctionExample::Get
+      FunctionName: get-coins-at-s3
+      Role: !FindInMap [RoleLambda, RoleExec, Adm]
+      Events:
+        GetApi:
+          Type: Api
+          Properties:
+            Path: /coin
+            Method: GET            
+            RestApiId:
+              Ref: APIRest
+
+Outputs:
+  Get:
+    Description: Function Get
+    Value: !Ref Get
+  ApiGateway:
+    Description: Api rest
+    Value: !Sub 
+      - https://${idApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${stage}/s3/
+      - idApiGateway: !Ref APIRest 
+        stage: !Ref StageApiGateway 
+  
